@@ -16,26 +16,43 @@ const UpdatePrompt = () => {
   });
 
   useEffect(() => {
-    const getPromptDetails = async () => {
-      const response = await fetch(`/api/prompt/${promptId}`);
-      const data = await response.json();
+    if (!promptId) return;
 
-      setPost({
-        prompt: data.prompt,
-        tag: data.tag,
-      });
+    const getPromptDetails = async () => {
+      try {
+        const response = await fetch(`/api/prompt/${promptId}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch prompt details.");
+        }
+        const data = await response.json();
+        setPost({ prompt: data.prompt, tag: data.tag });
+      } catch (error) {
+        console.error("Error fetching prompt details:", error);
+      }
     };
-    if (promptId) getPromptDetails();
+
+    getPromptDetails();
   }, [promptId]);
 
   const editPost = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    if (!promptId) return alert("Prompt Id not found");
+    if (!promptId) {
+      alert("Prompt Id not found");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/prompt/${promptId}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           prompt: post.prompt,
           tag: post.tag,
@@ -44,9 +61,11 @@ const UpdatePrompt = () => {
 
       if (response.ok) {
         router.push("/");
+      } else {
+        console.error("Failed to update the prompt.");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error updating prompt:", error);
     } finally {
       setSubmitting(false);
     }
